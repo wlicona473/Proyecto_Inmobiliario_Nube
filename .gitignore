@@ -10,18 +10,13 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Datos
-/data/**/*.csv
-/data/**/*.parquet
-/data/**/*.xlsx
+# Datos originales
+/data/raw/**
 
 # Credenciales
 .env
 .env.*
 *.pem
-
-# Configuración local de DVC
-.dvc/config.local
 
 # Configuración local de DVC
 .dvc/config.local
