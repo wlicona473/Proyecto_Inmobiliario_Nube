@@ -1,0 +1,27 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Datos
+/data/**/*.csv
+/data/**/*.parquet
+/data/**/*.xlsx
+
+# Credenciales
+.env
+.env.*
+*.pem
+
+# Configuración local de DVC
+.dvc/config.local
+
+# Configuración local de DVC
+.dvc/config.local
