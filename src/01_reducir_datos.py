@@ -5,23 +5,17 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-# ============================================================
-# 1. RUTAS DEL PROYECTO
-# ============================================================
-
-# Carpeta raíz del proyecto
+# Rutas del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Archivo original
-RUTA_ORIGINAL = (
+ruta_original = (
     BASE_DIR
     / "data"
     / "raw"
     / "Registro_de_transacciones_inmobiliarias_en_Colombia_IGAC_20261016.csv"
 )
 
-# Archivo procesado
-RUTA_PARQUET = (
+ruta_salida = (
     BASE_DIR
     / "data"
     / "processed"
@@ -29,16 +23,13 @@ RUTA_PARQUET = (
 )
 
 
-# ============================================================
-# 2. PARÁMETROS
-# ============================================================
-
-DEPARTAMENTOS_OBJETIVO = [
+# Parámetros del procesamiento
+departamentos_objetivo = [
     "BOGOTÁ D.C.",
     "CUNDINAMARCA",
 ]
 
-COLUMNAS_ENTERAS = [
+columnas_enteras = [
     "YEAR_RADICA",
     "Dinámica_Inmobiliaria",
     "COUNT_A",
@@ -48,118 +39,92 @@ COLUMNAS_ENTERAS = [
     "TIENE_MAS_DE_UN_VALOR",
 ]
 
-TAMANO_BLOQUE = 250_000
+tamano_bloque = 250_000
 
-
-# ============================================================
-# 3. PROCESAMIENTO
-# ============================================================
 
 def reducir_datos():
     """
-    Lee el archivo nacional de transacciones inmobiliarias por bloques,
-    conserva únicamente Bogotá D.C. y Cundinamarca y guarda el resultado
-    en formato Parquet.
+    Crea una versión reducida de la base nacional con los registros
+    correspondientes a Bogotá D.C. y Cundinamarca.
+
+    El archivo se lee por bloques para evitar cargar toda la base
+    en memoria y el resultado se guarda en formato Parquet.
     """
 
-    # Verificar que exista el archivo original
-    if not RUTA_ORIGINAL.exists():
+    if not ruta_original.exists():
         raise FileNotFoundError(
-            f"No se encontró el archivo original:\n{RUTA_ORIGINAL}"
+            f"No se encontró el archivo original en:\n{ruta_original}"
         )
 
-    # Crear carpeta processed si no existe
-    RUTA_PARQUET.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    # Crear la carpeta de salida en caso de que todavía no exista
+    ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
-    # Eliminar una versión incompleta previa
-    if RUTA_PARQUET.exists():
-        RUTA_PARQUET.unlink()
+    # Si ya existe una versión anterior, se reemplaza
+    if ruta_salida.exists():
+        ruta_salida.unlink()
 
-    writer = None
-    total_guardados = 0
+    escritor = None
+    total_registros = 0
 
     try:
+        bloques = pd.read_csv(
+            ruta_original,
+            chunksize=tamano_bloque,
+            dtype="string",
+        )
 
-        for i, bloque in enumerate(
-            pd.read_csv(
-                RUTA_ORIGINAL,
-                chunksize=TAMANO_BLOQUE,
-                dtype="string",
-            ),
-            start=1,
-        ):
+        for numero_bloque, bloque in enumerate(bloques, start=1):
 
-            # Filtrar únicamente Bogotá y Cundinamarca
-            filtrado = bloque[
-                bloque["DEPARTAMENTO"].isin(
-                    DEPARTAMENTOS_OBJETIVO
-                )
+            datos_filtrados = bloque[
+                bloque["DEPARTAMENTO"].isin(departamentos_objetivo)
             ].copy()
 
-            if filtrado.empty:
+            if datos_filtrados.empty:
                 print(
-                    f"Bloque {i}: "
-                    "0 registros seleccionados"
+                    f"Bloque {numero_bloque}: "
+                    "sin registros de Bogotá o Cundinamarca"
                 )
                 continue
 
-            # Convertir columnas numéricas conocidas
-            for columna in COLUMNAS_ENTERAS:
-                filtrado[columna] = (
-                    pd.to_numeric(
-                        filtrado[columna],
-                        errors="coerce",
-                    )
-                    .astype("Int64")
-                )
+            # Algunas columnas se leen inicialmente como texto para mantener
+            # un esquema consistente entre bloques. Aquí recuperamos su tipo entero.
+            for columna in columnas_enteras:
+                datos_filtrados[columna] = pd.to_numeric(
+                    datos_filtrados[columna],
+                    errors="coerce",
+                ).astype("Int64")
 
-            # Convertir DataFrame a tabla PyArrow
             tabla = pa.Table.from_pandas(
-                filtrado,
+                datos_filtrados,
                 preserve_index=False,
             )
 
-            # Crear el escritor con el esquema
-            # del primer bloque válido
-            if writer is None:
-                writer = pq.ParquetWriter(
-                    RUTA_PARQUET,
+            # El esquema del primer bloque filtrado se utiliza para todo el archivo
+            if escritor is None:
+                escritor = pq.ParquetWriter(
+                    ruta_salida,
                     tabla.schema,
                     compression="snappy",
                 )
 
-            writer.write_table(tabla)
+            escritor.write_table(tabla)
 
-            total_guardados += len(filtrado)
+            total_registros += len(datos_filtrados)
 
             print(
-                f"Bloque {i}: "
-                f"{len(filtrado):,} registros | "
-                f"Acumulado: {total_guardados:,}"
+                f"Bloque {numero_bloque}: "
+                f"{len(datos_filtrados):,} registros guardados | "
+                f"Total acumulado: {total_registros:,}"
             )
 
     finally:
+        if escritor is not None:
+            escritor.close()
 
-        if writer is not None:
-            writer.close()
+    print("\nProcesamiento finalizado.")
+    print(f"Total de registros guardados: {total_registros:,}")
+    print(f"Archivo generado en:\n{ruta_salida}")
 
-    print("\nProceso terminado")
-    print(
-        f"Total guardado: "
-        f"{total_guardados:,}"
-    )
-    print(
-        f"Archivo generado:\n"
-        f"{RUTA_PARQUET}"
-    )
-
-
-# ============================================================
-# 4. EJECUCIÓN
-# ============================================================
 
 if __name__ == "__main__":
     reducir_datos()
