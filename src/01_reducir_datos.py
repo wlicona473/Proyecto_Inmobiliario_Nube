@@ -1,3 +1,9 @@
+"""
+Script de reducción y filtrado de datos transaccionales inmobiliarios del IGAC.
+Filtra los datos originales para mantener únicamente los registros correspondientes
+a las zonas de Bogotá D.C. y Cundinamarca, guardando el resultado en formato Parquet.
+"""
+
 from pathlib import Path
 
 import pandas as pd
