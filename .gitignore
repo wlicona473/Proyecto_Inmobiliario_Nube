@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+.venv-gdrive/
 
 # Python
 __pycache__/
@@ -21,3 +22,4 @@ __pycache__/
 # Configuración local de DVC
 .dvc/config.local
 /transacciones_bogota_cundinamarca.parquet
+bucket-policy.json

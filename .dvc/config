@@ -2,3 +2,5 @@
     remote = s3_remote
 ['remote "s3_remote"']
     url = s3://proyecto-inmobiliario-grupo11-wlicona-2026-dvcstore
+['remote "gdrive_remote"']
+    url = gdrive://14Ta6MEpvp2B5HfW2akV2ykQvlBibuOB1
