@@ -20,3 +20,7 @@ Facilitar la identificación de operaciones transaccionales que se aparten del c
 
 - Git y GitHub se utilizan para versionar el código.
 - DVC se utiliza para versionar los conjuntos de datos.
+
+## Equipo
+
+- Estudiantes UniAndes MIAD

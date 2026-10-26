@@ -1,0 +1,5 @@
+outs:
+- md5: e7fa3a8339d28999baa5d91fd109a5d1
+  size: 181202066
+  hash: md5
+  path: transacciones_bogota_cundinamarca.parquet
