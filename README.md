@@ -24,3 +24,19 @@ Facilitar la identificación de operaciones transaccionales que se aparten del c
 ## Equipo
 
 - Estudiantes UniAndes MIAD
+
+## Tablero (RE-MONITOR)
+
+Tablero interactivo en Dash, en la carpeta `tablero/`.
+
+Ejecutar:
+
+    cd tablero
+    pip install -r requirements.txt
+    python app.py
+
+Abrir http://127.0.0.1:8050
+
+Datos: `cubo.csv`, `top_riesgo.csv` y `kpis.csv` son resúmenes del parquet procesado.
+`top_riesgo.csv` usa un puntaje de riesgo provisional hasta integrar el modelo del equipo.
+`metricas.csv` es opcional: si existe, el tablero muestra las métricas del modelo.
