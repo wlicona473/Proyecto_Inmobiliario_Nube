@@ -3,3 +3,5 @@ numpy
 pyarrow
 matplotlib
 jupyter
+optuna
+xgboost
