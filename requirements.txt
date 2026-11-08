@@ -1,2 +1,5 @@
 pandas
+numpy
 pyarrow
+matplotlib
+jupyter

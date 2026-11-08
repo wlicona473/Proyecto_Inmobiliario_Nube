@@ -311,6 +311,29 @@ print(
 )
 
 
+# %% Valores extremos
+
+positivos = df.loc[df["VALOR_NUM"] > 0, "VALOR_NUM"]
+
+p99 = positivos.quantile(0.99)
+p999 = positivos.quantile(0.999)
+
+print("\nAnálisis de valores extremos:")
+print("Percentil 99:", p99)
+print("Percentil 99.9:", p999)
+
+print("Por encima del p99:",
+      (positivos > p99).sum())
+
+print("Por encima del p99.9:",
+      (positivos > p999).sum())
+
+print("Porcentaje por encima del p99:",
+      round((positivos > p99).mean() * 100, 3), "%")
+
+print("Porcentaje por encima del p99.9:",
+      round((positivos > p999).mean() * 100, 3), "%")
+
 # %% Dinámica anual
 
 anual = df.groupby("YEAR_RADICA", observed=True).agg(
@@ -400,6 +423,117 @@ sin_valor_acto.sort_values().plot(
 )
 guardar("sin_valor_acto")
 
+# Resumen por acto jurídico
+actos_valor = (
+    df.groupby("NOMBRE_NATUJUR", observed=True)
+    .agg(
+        registros=("VALOR_NUM", "size"),
+        valores_positivos=("VALOR_NUM", lambda x: (x > 0).sum()),
+        valores_cero=("VALOR_NUM", lambda x: (x == 0).sum()),
+        valores_nulos=("VALOR_NUM", lambda x: x.isna().sum()),
+        valores_negativos=("VALOR_NUM", lambda x: (x < 0).sum())
+    )
+)
+
+# Porcentaje de participación sobre el total de registros
+actos_valor["participacion_total_pct"] = (
+    actos_valor["registros"] / len(df) * 100
+)
+
+# Porcentajes dentro de cada acto jurídico
+columnas_conteo = [
+    "valores_positivos",
+    "valores_cero",
+    "valores_nulos",
+    "valores_negativos"
+]
+
+for columna in columnas_conteo:
+    actos_valor[f"{columna}_pct"] = (
+        actos_valor[columna] /
+        actos_valor["registros"] * 100
+    )
+
+
+# Porcentaje sin valor positivo
+actos_valor["sin_valor_positivo"] = (
+    actos_valor["registros"] -
+    actos_valor["valores_positivos"]
+)
+
+actos_valor["sin_valor_positivo_pct"] = (
+    actos_valor["sin_valor_positivo"] /
+    actos_valor["registros"] * 100
+)
+
+# Ordenar por frecuencia
+actos_valor = actos_valor.sort_values(
+    "registros", ascending=False
+)
+
+print("Número de actos jurídicos:", len(actos_valor))
+
+print("\nResumen de los 30 actos más frecuentes:")
+print(actos_valor.head(30).round(2).to_string())
+
+
+# %% Actos jurídicos sin ningún valor positivo
+
+actos_sin_positivos = actos_valor.loc[
+    actos_valor["valores_positivos"] == 0
+].copy()
+
+print("Actos jurídicos sin valores positivos:")
+print("Cantidad:", len(actos_sin_positivos))
+
+print("\nDetalle:")
+print(
+    actos_sin_positivos[
+        [
+            "registros",
+            "participacion_total_pct",
+            "valores_cero",
+            "valores_nulos",
+            "valores_negativos"
+        ]
+    ].round(2).to_string()
+)
+
+
+# %% Actos con más del 95 % sin valor positivo
+
+actos_alta_ausencia = actos_valor.loc[
+    actos_valor["sin_valor_positivo_pct"] >= 95
+].copy()
+
+print("Actos con al menos 95 % sin valor positivo:")
+print("Cantidad:", len(actos_alta_ausencia))
+
+print(
+    actos_alta_ausencia[
+        [
+            "registros",
+            "participacion_total_pct",
+            "valores_positivos_pct",
+            "valores_cero_pct",
+            "valores_nulos_pct",
+            "sin_valor_positivo_pct"
+        ]
+    ].round(2).to_string()
+)
+
+# %% Exportar resultados
+
+RUTA_RESULTADOS = PROYECTO / "reports" / "analisis_actos_juridicos.csv"
+
+actos_valor.round(4).to_csv(
+    RUTA_RESULTADOS,
+    encoding="utf-8-sig"
+)
+
+print("Archivo guardado en:")
+print(RUTA_RESULTADOS)
+
 # %% Heterogeneidad territorial
 mun = df.groupby("MUNICIPIO", observed=True)["TIENE_VALOR"].agg(registros="size", con_valor="mean")
 mun["pct_sin_valor"] = (1 - mun["con_valor"]) * 100
@@ -439,6 +573,32 @@ mun["pct_sin_valor"].plot(
     ylabel="Número de municipios"
 )
 guardar("sin_valor_municipio")
+
+# %% Disponibilidad de valor positivo por municipio
+
+mun_valor = df.groupby("MUNICIPIO", observed=True).agg(
+    registros=("VALOR_NUM", "size"),
+    con_valor_positivo=("VALOR_NUM", lambda x: (x > 0).mean())
+)
+
+mun_valor["pct_valor_positivo"] = (
+    mun_valor["con_valor_positivo"] * 100
+)
+
+print("\nMunicipios con mayor proporción de valor positivo:")
+print(
+    mun_valor.sort_values(
+        "pct_valor_positivo", ascending=False
+    ).head(15).round(2)
+)
+
+print("\nMunicipios con menor proporción de valor positivo:")
+print(
+    mun_valor.sort_values(
+        "pct_valor_positivo", ascending=True
+    ).head(15).round(2)
+)
+
 
 # %% Registros y diversidad de actos por matrícula
 
@@ -538,3 +698,292 @@ plt.ylabel("log10(VALOR)")
 plt.tight_layout()
 
 guardar("valor_por_acto")
+
+# %% Calidad y consistencia de variables
+
+# Conversión de fecha
+df["FECHA_RADICA"] = pd.to_datetime(
+    df["FECHA_RADICA_TEXTO"],
+    errors="coerce",
+    dayfirst=True
+)
+
+
+print("\nTipo de dato:")
+print(df["FECHA_RADICA_TEXTO"].dtype)
+
+
+print("\nCantidad de valores faltantes:")
+print(df["FECHA_RADICA_TEXTO"].isna().sum())
+
+print("\nPrimeros 30 registros:")
+print(
+    df[["FECHA_RADICA_TEXTO", "YEAR_RADICA"]]
+    .head(30)
+    .to_string(index=False)
+)
+
+print("\nMuestra aleatoria de 20 registros:")
+muestra_fechas = df.loc[
+    df["FECHA_RADICA_TEXTO"].notna(),
+    ["FECHA_RADICA_TEXTO", "YEAR_RADICA"]
+].sample(n=20, random_state=42)
+print(muestra_fechas.to_string(index=False))
+
+print("\nFechas no convertidas:")
+print(df["FECHA_RADICA"].isna().sum())
+
+# Comparación entre año y fecha
+df["ANIO_FECHA"] = df["FECHA_RADICA"].dt.year
+
+inconsistencias_anio = (
+    df["ANIO_FECHA"].notna()
+    & (df["YEAR_RADICA"] != df["ANIO_FECHA"])
+)
+
+print("\nInconsistencias entre YEAR_RADICA y FECHA_RADICA:")
+print(inconsistencias_anio.sum())
+
+# Duplicados exactos en las columnas cargadas
+print("\nRegistros duplicados en las columnas seleccionadas:")
+print(df.duplicated(subset=COLS).sum())
+
+# Valores faltantes y categorías
+for col in ["DIVIPOLA", "TIPO_PREDIO_ZONA", "COD_NATUJUR"]:
+    print(f"\nVariable: {col}")
+    print("Faltantes:", df[col].isna().sum())
+    print("Categorías únicas:", df[col].nunique())
+
+# Consistencia entre código y nombre del acto
+consistencia_actos = (
+    df.groupby("COD_NATUJUR", observed=True)["NOMBRE_NATUJUR"]
+      .nunique()
+)
+
+print("\nCódigos asociados a más de un nombre:")
+print((consistencia_actos > 1).sum())
+
+# %% Normalización de FECHA_RADICA_TEXTO
+
+fechas = df["FECHA_RADICA_TEXTO"].str.strip()
+
+# Identificar los dos formatos principales
+es_iso = fechas.str.match(r"^\d{4}-\d{2}-\d{2}", na=False)
+es_barras = fechas.str.contains("/", na=False)
+
+# Crear una columna de fecha normalizada
+df["FECHA_RADICA"] = pd.NaT
+
+# Formato ISO: 2018-07-11 o 2018-07-11 00:00:00
+df.loc[es_iso, "FECHA_RADICA"] = pd.to_datetime(
+    fechas.loc[es_iso],
+    format="mixed",
+    errors="coerce"
+)
+
+# Formato día/mes/año: 01/10/2015 o 03/11/22
+df.loc[es_barras, "FECHA_RADICA"] = pd.to_datetime(
+    fechas.loc[es_barras],
+    format="mixed",
+    dayfirst=True,
+    errors="coerce"
+)
+
+# Revisar resultados
+print("\nTipo de dato normalizado:")
+print(df["FECHA_RADICA"].dtype)
+
+print("\nFechas faltantes o no convertidas:")
+print(df["FECHA_RADICA"].isna().sum())
+
+print("\nMuestra de fechas originales y normalizadas:")
+print(
+    df[["FECHA_RADICA_TEXTO", "FECHA_RADICA", "YEAR_RADICA"]]
+    .sample(20, random_state=42)
+    .to_string(index=False)
+)
+
+# Validar correspondencia del año
+anio_fecha = df["FECHA_RADICA"].dt.year
+
+inconsistencias = (
+    anio_fecha.notna()
+    & (anio_fecha != df["YEAR_RADICA"])
+)
+
+print("\nFechas cuyo año no coincide con YEAR_RADICA:")
+print(inconsistencias.sum())
+
+# %% Identificar registros sin fecha de radicación
+
+sin_fecha = df.loc[
+    df["FECHA_RADICA_TEXTO"].isna()
+]
+
+print("Cantidad de registros sin fecha:", len(sin_fecha))
+
+print("\nRegistro(s) sin fecha:")
+print(sin_fecha.to_string(index=False))
+
+
+# %% Cobertura mensual de las transacciones
+
+# Convertir las fechas válidas a periodos mensuales
+df["PERIODO"] = df["FECHA_RADICA"].dt.to_period("M")
+
+# Meses únicos que aparecen en la base
+meses_presentes = pd.PeriodIndex(
+    df["PERIODO"].dropna().unique()
+).sort_values()
+
+# Todos los meses esperados: enero de 2015 a diciembre de 2023
+meses_esperados = pd.period_range(
+    start="2015-01",
+    end="2023-12",
+    freq="M"
+)
+
+# Identificar meses faltantes y meses fuera del periodo esperado
+meses_faltantes = meses_esperados.difference(meses_presentes)
+meses_fuera_rango = meses_presentes.difference(meses_esperados)
+
+print("Número de meses únicos presentes:", len(meses_presentes))
+print("Número de meses esperados:", len(meses_esperados))
+print("Número de meses faltantes:", len(meses_faltantes))
+
+print("\nMeses presentes:")
+print(meses_presentes.astype(str).tolist())
+
+print("\nMeses fuera del periodo 2015-01 a 2023-12:")
+print(meses_fuera_rango.astype(str).tolist())
+
+# %% Número de transacciones por mes
+
+registros_mes = (
+    df.dropna(subset=["PERIODO"])
+      .groupby("PERIODO")
+      .size()
+      .reindex(meses_esperados, fill_value=0)
+)
+
+print(registros_mes.to_string())
+
+registros_mes.plot(
+    figsize=(14, 5),
+    title="Número de transacciones inmobiliarias por mes",
+    xlabel="Mes",
+    ylabel="Número de registros"
+)
+
+plt.tight_layout()
+guardar("transacciones_por_mes")
+
+
+# %% Lectura del IPC
+
+RUTA_IPC = PROYECTO / "ipc.xlsx"
+
+ipc = pd.read_excel(RUTA_IPC)
+
+print("\nTipos de datos:")
+print(ipc.dtypes)
+
+ipc["PERIODO"] = ipc["Fecha"].dt.to_period("M")
+
+# %% Identificar IPC base diciembre de 2018
+
+periodo_base = pd.Period("2018-12", freq="M")
+
+ipc_base = ipc.loc[
+    ipc["PERIODO"] == periodo_base, "IPC"
+]
+
+print("IPC diciembre de 2018:")
+print(ipc_base)
+
+# %% Integración del IPC con las transacciones
+
+df["PERIODO"] = df["FECHA_RADICA"].dt.to_period("M")
+
+ipc_mensual = ipc[["PERIODO", "IPC"]].copy()
+
+df = df.merge(
+    ipc_mensual,
+    on="PERIODO",
+    how="left",
+    validate="many_to_one"
+)
+
+print("Registros totales:", len(df))
+print("Registros con IPC:", df["IPC"].notna().sum())
+print("Registros sin IPC:", df["IPC"].isna().sum())
+
+
+# %% Conversión a pesos constantes de diciembre de 2018
+
+print(df[["VALOR_NUM", "IPC"]].dtypes)
+
+print("\nValores faltantes:")
+print(df[["VALOR_NUM", "IPC"]].isna().sum())
+
+# Convertir Float64 nullable a float64 convencional
+df["VALOR_NUM"] = df["VALOR_NUM"].astype("float64")
+
+IPC_BASE = 100
+
+df["VALOR_REAL"] = np.nan
+
+
+# Identificar registros válidos
+condicion = (
+    df["VALOR_NUM"].notna() &
+    df["IPC"].notna() &
+    (df["VALOR_NUM"] > 0) &
+    (df["IPC"] > 0)
+)
+
+
+# Calcular valores reales
+df.loc[condicion, "VALOR_REAL"] = (
+    df.loc[condicion, "VALOR_NUM"] *
+    IPC_BASE /
+    df.loc[condicion, "IPC"]
+)
+
+print("Registros totales:", len(df))
+print("Registros con valor real:", df["VALOR_REAL"].notna().sum())
+print("Registros sin valor real:", df["VALOR_REAL"].isna().sum())
+
+
+# %% Revisión de registros sin VALOR_REAL
+
+print("Causas de ausencia de VALOR_REAL:")
+
+print(
+    "VALOR_NUM nulo:",
+    df["VALOR_NUM"].isna().sum()
+)
+
+print(
+    "VALOR_NUM igual a cero:",
+    (df["VALOR_NUM"] == 0).sum()
+)
+
+print(
+    "VALOR_NUM negativo:",
+    (df["VALOR_NUM"] < 0).sum()
+)
+
+print(
+    "IPC nulo:",
+    df["IPC"].isna().sum()
+)
+
+# %% Revisión de duplicados exactos
+
+duplicados = df.duplicated(subset=COLS, keep=False)
+
+print("Total de registros:", len(df))
+print("Registros que pertenecen a duplicados:", duplicados.sum())
+print("Porcentaje:", round(duplicados.mean() * 100, 4), "%")
+
