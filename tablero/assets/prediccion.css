@@ -1,0 +1,40 @@
+/* Estilos de la pestaña de predicción (Dash carga assets/*.css automáticamente) */
+.rm-pred { padding: 12px; }
+.rm-grid-2 { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; margin-bottom: 16px; }
+.rm-card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.rm-card h3 { font-size: 15px; margin: 8px 0 10px; color: #1F3A68; }
+.rm-field { margin-bottom: 10px; }
+.rm-label { font-size: 12px; font-weight: 600; display: block; margin-bottom: 3px; }
+.rm-help { color: #666; font-size: 11px; display: block; margin-top: 2px; }
+.rm-input { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.rm-btn { width: 100%; margin-top: 8px; padding: 10px; border: 0; border-radius: 6px;
+          background: #2E5BA8; color: #fff; font-weight: 700; cursor: pointer; }
+.rm-btn:hover { background: #1F3A68; }
+.rm-kpi-big { font-size: 34px; font-weight: 800; color: #2E5BA8; margin: 4px 0 8px; }
+@media (max-width: 900px) { .rm-grid-2 { grid-template-columns: 1fr; } }
+
+/* Contexto y pregunta de negocio */
+.rm-pred .rm-card { margin-bottom: 16px; }
+.rm-intro { border-left: 5px solid #2E5BA8; }
+.rm-intro-t { font-size: 20px; color: #1F3A68; margin: 0 0 8px; }
+.rm-intro-p { font-size: 14px; color: #333; margin: 0 0 8px; line-height: 1.5; }
+.rm-steps { margin: 6px 0 10px 18px; padding: 0; font-size: 13px; color: #333; line-height: 1.6; }
+.rm-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+.rm-kpi { background: #fff; border-radius: 8px; padding: 12px 16px; text-align: center;
+          box-shadow: 0 1px 4px rgba(0,0,0,.12); border-bottom: 4px solid #1f5fa8; }
+.rm-kpi-t { margin: 0; font-size: 12px; color: #555; }
+.rm-kpi-v { margin: 4px 0; font-size: 28px; color: #1F3A68; }
+.rm-k2 { border-bottom-color: #3dae7a; }
+.rm-k3 { border-bottom-color: #1f5fa8; }
+.rm-k4 { border-bottom-color: #f5a623; }
+@media (max-width: 900px) { .rm-kpis { grid-template-columns: 1fr 1fr; } }
+
+/* Encabezado compacto */
+.rm-intro { padding: 12px 16px; }
+.rm-intro-t { font-size: 18px; margin: 0 0 4px; }
+.rm-intro-p { margin: 0 0 4px; }
+.rm-steps-line { font-size: 13px; color: #1F3A68; font-weight: 600; margin: 4px 0; }
+
+/* Resultado: rango y aclaraciones */
+.rm-detalle { margin: 6px 0 8px; }
+.rm-range { font-size: 15px; font-weight: 600; color: #1F3A68; margin: 2px 0; }

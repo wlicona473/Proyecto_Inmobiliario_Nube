@@ -1,0 +1,30 @@
+# Levanta la API del modelo y el tablero juntos:  docker compose up --build
+services:
+  api:
+    build: ./api
+    container_name: re-monitor-api
+    environment:
+      - PORT=8001
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  tablero:
+    build: ./tablero
+    container_name: re-monitor-tablero
+    environment:
+      - PORT=8050
+      - API_URL=api
+      - API_PORT=8001
+    ports:
+      - "8050:8050"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

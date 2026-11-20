@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+joblib
+numpy
+pandas
+# el modelo se guardó con scikit-learn 1.6.1
+scikit-learn==1.6.1
+xgboost

@@ -1,0 +1,7 @@
+.venv
+.venv-mlflow
+__pycache__
+*.pyc
+prueba.py
+generar_artefactos.py
+modelo
