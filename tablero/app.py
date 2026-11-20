@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, dash_table, Input, Output, State
 
+from prediccion import layout_prediccion, registrar_callbacks_prediccion
+
 BASE = Path(__file__).resolve().parent
 COLORES = ["#1f5fa8", "#2a9d8f", "#3dae7a", "#8bbf3f", "#f5a623", "#6b7280"]
 VERDE, AZUL = "#3dae7a", "#1f5fa8"
@@ -83,7 +85,7 @@ def mini(nombre):
 MINIS = [mini(n) for n in ("TMR", "CNMM", "Precision@K") if n in metricas]
 
 
-app = Dash(__name__)
+app = Dash(__name__, suppress_callback_exceptions=True)
 server = app.server  # para gunicorn
 app.title = "RE-MONITOR"
 
@@ -93,6 +95,9 @@ app.layout = html.Div([
         html.Div([html.Button("Download", id="btn-dl", className="btn"), dcc.Download(id="dl")]),
     ], className="topbar"),
 
+    dcc.Tabs(id="tabs", value="tab-pred", className="rm-tabs", children=[
+        dcc.Tab(label="Estimar valor y factores", value="tab-pred", children=layout_prediccion()),
+        dcc.Tab(label="Dashboard exploratorio", value="tab-dash", children=[
     html.Div([
         # ---------------- filtros
         html.Div([
@@ -152,7 +157,12 @@ app.layout = html.Div([
             html.Div(dcc.Graph(id="g-predios"), className="card"),
         ], className="main"),
     ], className="app"),
+        ]),
+    ]),
 ])
+
+# callbacks de la pestaña de predicción
+registrar_callbacks_prediccion(app)
 
 ENTRADAS = [Input("f-depto", "value"), Input("f-ciudad", "value"), Input("f-zona", "value"),
             Input("f-acto", "value"), Input("f-anio", "value")]

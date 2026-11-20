@@ -1,0 +1,9 @@
+{
+  "modelo": "XGBoost (trial 24, Optuna, AWS EC2)",
+  "conjunto": "Validación 2021–2022",
+  "escala": "logaritmo natural del valor en pesos constantes de dic. 2018",
+  "MAE": 1.2620,
+  "RMSE": 1.5842,
+  "R2": 0.2149,
+  "nota": "Cuando el equipo tenga las métricas del conjunto de prueba (2023), reemplazar estos valores y el campo 'conjunto'."
+}
